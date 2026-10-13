@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BusMate iOS 共同开发代码规范</title>
+<style>
+:root{--bg:#f4f6f8;--paper:#fff;--text:#202938;--muted:#667085;--line:#e4e7ec;--brand:#26845b;--code:#f2f4f7;--shadow:0 8px 30px rgba(16,24,40,.06)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.8}
+.layout{max-width:1050px;margin:18px auto 60px;padding:0 18px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;align-items:start}
+nav{position:sticky;top:16px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);max-height:calc(100vh - 32px);overflow:auto}
+nav strong{display:block;font-size:13px;margin:0 0 8px;color:var(--muted)}
+nav a{display:block;text-decoration:none;color:#475467;font-size:13px;padding:5px 7px;border-radius:7px;line-height:1.5}
+nav a:hover{background:#edf7f1;color:var(--brand)}
+article{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:clamp(22px,4vw,48px);box-shadow:var(--shadow);min-width:0}
+article h1{font-size:30px;color:#173f32;margin-top:0}
+article h2{font-size:22px;margin:38px 0 14px;padding-bottom:9px;border-bottom:1px solid var(--line);color:#174d38;scroll-margin-top:20px}
+article h3{font-size:17px;margin:25px 0 9px;color:#344054;scroll-margin-top:20px}
+article p{margin:10px 0}
+article ul{padding-left:24px;margin:10px 0 18px}
+article li{padding-left:3px;margin:5px 0}
+article li::marker{color:var(--brand)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em;background:#eef2f6;padding:2px 5px;border-radius:5px;color:#344054;overflow-wrap:anywhere}
+pre{background:#171d26;color:#e6edf3;padding:18px;border-radius:10px;overflow:auto;line-height:1.65;font-size:13px}
+pre code{background:none;color:inherit;padding:0}
+blockquote{border-left:3px solid var(--brand);margin:16px 0;padding:4px 16px;color:var(--muted);background:#f7faf8}
+hr{border:0;border-top:1px solid var(--line);margin:26px 0}
+.hidden{display:none!important}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:0 16px 28px}
+mark{background:#fff0a8;color:inherit;border-radius:3px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}nav{position:static;max-height:none}article{padding:22px}article h1{font-size:25px}}
+@media print{body{background:#fff}nav{display:none}.layout{display:block;margin:0;padding:0}article{border:0;box-shadow:none;padding:0}article h2{break-after:avoid}pre{white-space:pre-wrap;word-break:break-word}}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav id="toc"><strong>本文目录</strong><div id="tocLinks"></div></nav>
+<article id="content">
+<h1>iOS 共同开发代码规范</h1>
+<p>本文用于 BusMate 两名或多名 iOS 开发人员共同开发时统一代码风格、文件结构和常用写法。新代码优先遵守本文；历史代码按原有结构维护，修改时逐步统一。</p>
+
+<h2>1. 通用代码风格</h2>
+<h3>1.1 文件结构</h3>
+<p>普通 Swift 类型统一按以下顺序组织：</p>
+<pre><code>import UIKit
+
+class ExampleView: UIView {
+    // MARK: - Public
+
+    // MARK: - UI
+
+    // MARK: - Init
+
+    // MARK: - Private
+
+    // MARK: - ButtonClick
+}
+
+extension ExampleView: ExampleViewDelegate {
+}</code></pre>
+<ul>
+<li><strong>Public</strong>：外部可访问属性、<code>identifier</code>、Delegate、公开数据入口。</li>
+<li><strong>UI</strong>：所有页面控件和懒加载属性。</li>
+<li><strong>Init</strong>：系统初始化方法、<code>viewDidLoad</code>、<code>cell(with:)</code>、<code>setData</code> 等入口。</li>
+<li><strong>Private</strong>：<code>buildUI()</code>、私有模型、数据处理和内部辅助方法。</li>
+<li><strong>ButtonClick</strong>：按钮点击方法；没有按钮时不保留空分区。</li>
+<li>DataSource、Delegate 和其他协议实现统一写在类外 extension 中。</li>
+</ul>
+<h3>1.2 排版</h3>
+<ul>
+<li>控件属性统一使用 <code>lazy private var</code>，控件的固定样式在闭包中完成。</li>
+<li>代码保持紧凑，闭包内部不插入无意义的空行。</li>
+<li>方法调用参数在合理长度内保持一行，不为了单个参数机械换行。</li>
+<li><code>buildUI()</code> 先设置背景和基础属性，再添加控件；空一行后写约束；每组约束之间空一行。</li>
+<li>一个方法只完成一个主要动作，布局、数据绑定、网络请求需要拆开。</li>
+<li>新代码避免强制解包；必须使用时先确认前置条件。</li>
+</ul>
+<h3>1.3 UI 约束</h3>
+<ul>
+<li>页面约束统一使用 SnapKit，不在同一个视图中混用 SnapKit 和手写约束。</li>
+<li>添加控件和设置约束分开书写，控件只在一个位置添加和约束。</li>
+<li>页面背景优先使用 <code>Color.background</code>，卡片背景使用 <code>.white</code>。</li>
+<li>安全区、导航栏高度和底部高度统一使用项目已有的 <code>safeAreaTop</code>、<code>safeAreaBottom</code>、<code>totalTopHeight(_:)</code> 等方法。</li>
+</ul>
+<h3>1.4 公共样式</h3>
+<ul>
+<li>颜色优先使用 <code>Color.theme</code>、<code>Color.textTheme</code>、<code>Color.textSub</code>、<code>Color.textWeak</code>、<code>Color.line</code> 等语义化颜色。</li>
+<li>字号优先使用 16、14、12；特殊标题可按页面视觉需要使用 18 或 20。</li>
+<li>不在页面中重复定义同一颜色、字体、间距和安全区计算。</li>
+<li>多个控件样式相同但业务含义不同，仍分别声明各自的懒加载属性；不要为了少写几行创建页面级工厂方法。</li>
+</ul>
+
+<h2>2. ViewController 规范</h2>
+<h3>2.1 基本职责</h3><p>ViewController 负责页面生命周期、页面组装、数据源/代理、页面跳转和页面级网络调用；不直接修改 Cell 的私有控件。</p>
+<h3>2.2 生命周期</h3><p>普通页面统一先构建 UI，再请求数据：</p>
+<pre><code>override func viewDidLoad() {
+    super.viewDidLoad()
+    buildUI()
+    buildData()
+}</code></pre>
+<p><code>buildUI()</code> 的常用顺序：隐藏系统导航栏、设置背景色、添加导航栏、添加主要内容视图、设置约束。</p>
+<h3>2.3 控件和网络</h3>
+<ul>
+<li>页面控件全部使用 <code>lazy private var</code>。</li>
+<li>网络请求统一使用项目的 <code>networkManage</code>，不在页面中单独创建 MoyaProvider。</li>
+<li>网络闭包使用 <code>[weak self]</code>，进入闭包后安全解包。</li>
+<li>成功时先保存模型，再刷新 UI；失败时统一使用 <code>HUD.show(string: reason.errorString)</code>。</li>
+<li>必要参数缺失时先提示并 <code>return</code>。</li>
+</ul>
+<h3>2.4 ButtonClick</h3>
+<p>按钮名称为 <code>taskButton</code> 时，点击方法固定为 <code>taskButtonClick</code>：</p>
+<pre><code>lazy private var taskButton: UIButton = {
+    let button = UIButton()
+    button.addTarget(self, action: #selector(taskButtonClick), for: .touchUpInside)
+    return button
+}()
+
+@objc
+private func taskButtonClick() {
+}</code></pre>
+<p>按钮点击方法必须放在 <code>// MARK: - ButtonClick</code> 下。</p>
+
+<h2>3. UIView / 普通自定义 View 规范</h2>
+<ul>
+<li>类名使用业务名称加 <code>View</code>，例如 <code>MessageBoardView</code>、<code>DateSelectionView</code>。</li>
+<li>根 View 负责容器布局和对外回调，内部控件保持私有。</li>
+<li>控件使用懒加载，约束统一使用 SnapKit。</li>
+<li>需要传入数据时，使用初始化方法或 <code>setData</code>/<code>setModel</code>，不要让外部逐个修改内部控件。</li>
+<li>只在公共组件确实具有稳定复用价值时抽取公共方法；页面中相似控件按业务名称分别声明。</li>
+<li>复杂 View 的网络请求、页面跳转和 HUD 提示由外部控制器或 ViewModel 处理。</li>
+</ul>
+
+<h2>4. UITableViewCell 规范</h2>
+<h3>4.1 基础结构</h3><p>自定义 Cell 必须有统一复用标识：</p>
+<pre><code>static var identifier: String { String(describing: self) }</code></pre>
+<p>注册和获取 Cell 时使用同一个 <code>identifier</code>，不使用散落的字符串常量。</p>
+<p>Cell 初始化时调用 <code>buildUI()</code>，默认关闭选中效果：</p>
+<pre><code>override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+    super.init(style: style, reuseIdentifier: reuseIdentifier)
+    buildUI()
+}
+
+required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+}</code></pre>
+<h3>4.2 数据赋值</h3><p>Cell 对外提供统一的数据入口，内部保存模型并完成控件赋值：</p>
+<pre><code>private var model: ExampleModel?
+
+func setData(_ model: ExampleModel?) {
+    self.model = model
+    titleLabel.text = model?.title
+}</code></pre>
+<ul>
+<li>ViewController 只调用 <code>setData</code>/<code>setModel</code>，不直接修改 Cell 内部控件。</li>
+<li>Cell 只负责展示和格式化，不发起网络请求、不执行页面跳转。</li>
+<li>必须实现 <code>prepareForReuse()</code>，清空文本、图片、隐藏状态、选中状态和异步结果。</li>
+</ul>
+<h3>4.3 Cell 布局</h3>
+<ul>
+<li><code>buildUI()</code> 中先设置 <code>selectionStyle</code>、背景色，再添加控件和约束。</li>
+<li>Cell 内部控件使用 <code>lazy private var</code>。</li>
+<li>图片、标题、辅助信息、按钮按照 Cell 自身职责组织，不能把整页 UI 堆进一个 Cell。</li>
+<li>动态展示状态由 <code>setData</code> 统一更新，避免复用后残留上一条数据。</li>
+</ul>
+
+<h2>5. Delegate 规范</h2>
+<h3>5.1 使用场景</h3><p>Cell、View 或弹窗需要向外传递点击、输入、选择结果或其他数据时使用 Delegate；网络请求和页面跳转仍由上层处理。</p>
+<h3>5.2 命名和声明</h3><p>协议名为“组件名 + Delegate”，例如 <code>DriverNearBusCellDelegate</code>：</p>
+<pre><code>protocol DriverNearBusCellDelegate: AnyObject {
+    func driverNearBusCell(cell: DriverNearBusCell, returnButton button: UIControl, returnModel model: TaskListDataModel?)
+}
+
+weak var delegate: DriverNearBusCellDelegate?</code></pre>
+<ul>
+<li>Delegate 协议继承 <code>AnyObject</code> 或 <code>NSObjectProtocol</code>。</li>
+<li>Delegate 属性必须使用 <code>weak</code>。</li>
+<li>Delegate 属性放在 <code>identifier</code> 下方，公开数据入口附近。</li>
+<li>方法名包含组件名称、触发控件或事件名称、返回数据名称。</li>
+<li>回调时传递当前组件 <code>self</code> 和必要的业务数据，不传递不相关页面状态。</li>
+</ul>
+
+<h2>6. UIButton 规范</h2>
+<ul>
+<li>UIButton 统一使用懒加载创建。</li>
+<li>事件绑定写在按钮的懒加载闭包中。</li>
+<li>点击方法使用“按钮名称 + <code>Click</code>”，并放在 <code>ButtonClick</code> 分区。</li>
+<li>不通过 tag 代替清晰的按钮点击方法；确需区分同类按钮时，tag 使用对应业务枚举值。</li>
+<li>按钮的文字、颜色、圆角、边框和状态统一在按钮创建或 <code>setData</code> 中配置。</li>
+</ul>
+<pre><code>lazy private var confirmButton: UIButton = {
+    let button = UIButton(type: .custom)
+    button.setTitle(language("确定"), for: .normal)
+    button.setTitleColor(.white, for: .normal)
+    button.backgroundColor = Color.theme
+    button.layer.cornerRadius = 22
+    button.addTarget(self, action: #selector(confirmButtonClick), for: .touchUpInside)
+    return button
+}()</code></pre>
+
+<h2>7. UIImageView 规范</h2>
+<ul>
+<li>UIImageView 统一使用懒加载创建，约束使用 SnapKit。</li>
+<li>设置图片时使用 <code>UIImage(named:)</code>，不使用系统图标代替项目资源。</li>
+<li>开发阶段根据 UI 图确认图片位置，可设置临时背景色或占位图；最终联调前替换为正式资源并移除临时占位样式。</li>
+<li>根据用途设置 <code>contentMode</code>，图标通常使用 <code>.scaleAspectFit</code>，背景图根据设计使用 <code>.scaleAspectFill</code>。</li>
+<li>图片资源统一放入 <code>Assets.xcassets</code>，使用功能前缀命名。</li>
+</ul>
+<pre><code>lazy private var generalImageView: UIImageView = {
+    let imageView = UIImageView()
+    imageView.image = UIImage(named: "Frame")
+    imageView.contentMode = .scaleAspectFit
+    return imageView
+}()</code></pre>
+
+<h2>8. UITableView 页面规范</h2>
+<h3>8.1 固定 Cell 列表</h3><p>适用于公告、消息、设置等列表页：</p>
+<ul>
+<li>TableView 使用统一背景色，隐藏滚动条，关闭系统分割线。</li>
+<li>注册 Cell 时使用 <code>Cell.identifier</code>。</li>
+<li>固定高度使用 <code>rowHeight</code>；动态高度依靠完整约束。</li>
+<li>Header/Footer 和 estimated 高度按页面需要设置，减少刷新跳动。</li>
+<li><code>numberOfRowsInSection</code> 对可选数组使用 <code>?? 0</code>。</li>
+<li><code>cellForRowAt</code> 先安全取得模型，再调用 Cell 的 <code>setData</code>。</li>
+</ul>
+<h3>8.2 多种 Cell / 多 Section 页面</h3>
+<ul>
+<li>每一种 Cell 对应明确的 section 类型。</li>
+<li>Section 类型、行数、行高、Header/Footer 高度由 ViewModel 或 section 描述统一维护。</li>
+<li><code>cellForRowAt</code> 根据 section 类型选择 Cell，不使用散落的魔法数字。</li>
+<li>未知 section 返回空 Cell，避免页面崩溃。</li>
+<li>Cell 的数据展示和样式由 Cell 自身负责，ViewController 只负责组装。</li>
+</ul>
+<h3>8.3 刷新和分页</h3>
+<ul>
+<li>下拉刷新时页码重置为 1，并暂时隐藏 Footer。</li>
+<li>第 1 页替换列表，后续页使用 <code>append(contentsOf:)</code> 追加。</li>
+<li>请求成功和失败都结束 Header/Footer 刷新状态。</li>
+<li>没有数据时隐藏 Footer；有数据时显示 Footer。</li>
+<li>达到总页数调用 <code>endRefreshingWithNoMoreData()</code>，否则调用 <code>endRefreshing()</code>。</li>
+<li>请求完成后同步调用 <code>reloadData()</code> 和 <code>reloadEmptyDataSet()</code>。</li>
+</ul>
+
+<h2>9. UIScrollView 页面规范</h2>
+<ul>
+<li>页面使用 <code>navigationView</code>、<code>scrollView</code>、<code>container</code> 三层结构。</li>
+<li><code>navigationView</code> 不放进滚动内容；业务控件全部添加到 <code>container</code>。</li>
+<li><code>scrollView.contentInsetAdjustmentBehavior = .never</code>。</li>
+<li>关闭不需要的横向、纵向滚动条。</li>
+<li><code>contentHeight</code> 根据最后一个 UI 控件底部位置计算，最后保留约 20pt，不使用过大的估算值。</li>
+<li>第一张卡片通常从 <code>totalTopHeight(self) + 12</code> 开始，卡片左右间距通常为 12，卡片内部间距通常为 16。</li>
+</ul>
+
+<h2>10. UIView 弹窗规范</h2>
+<ul>
+<li>业务弹窗统一使用自定义 <code>UIView</code>，不使用页面 <code>present</code>。</li>
+<li>弹窗文件放在 <code>Company/Modal</code> 对应功能目录中。</li>
+<li>居中确认弹窗和底部抽屉弹窗分别保持统一的容器结构和动画方式。</li>
+<li>根视图负责遮罩，<code>bgView</code> 负责内容，点击空白区域使用透明按钮处理。</li>
+<li>所有约束使用 SnapKit；显示和关闭分别封装为 <code>show</code>/<code>showView</code> 和 <code>dismiss</code>/<code>dismissView</code>。</li>
+<li>关闭动画完成后必须 <code>removeFromSuperview()</code>。</li>
+<li>弹窗通过闭包返回结果，网络请求和页面跳转由外部页面处理。</li>
+<li>有键盘监听时，在 <code>deinit</code> 中移除通知，并在关闭时 <code>endEditing(true)</code>。</li>
+</ul>
+
+<h2>11. Model 规范</h2>
+<ul>
+<li>接口返回模型统一实现 <code>Codable</code>。</li>
+<li>属性默认使用可选类型，兼容后台字段缺失。</li>
+<li>每个模型显式声明 <code>CodingKeys</code>，完整映射后台字段。</li>
+<li>后台下划线字段转换为 lowerCamelCase，原字段保留在 <code>CodingKeys</code>。</li>
+<li>嵌套对象和数组创建明确的模型类型，不使用 <code>Any?</code> 代替真实结构。</li>
+<li>顶层 data 的 id 使用 <code>idData</code>，列表元素 id 使用 <code>idList</code>，其他 id 根据所属字典命名。</li>
+<li>Model 只保存数据结构，不写 UI、网络请求和页面业务逻辑。</li>
+</ul>
+
+<h2>12. 网络接口规范</h2>
+<p>新增接口必须同时补充：API case、path、method、task、headers、Codable Model 和页面调用。</p>
+<ul>
+<li>GET/POST 按真实接口文档配置，不根据接口名称猜测。</li>
+<li>JSON body 使用 <code>JSONEncoding.default</code>，URL 参数使用 <code>URLEncoding.default</code>。</li>
+<li>需要 Token 的接口统一使用项目 Header 配置。</li>
+<li>网络请求统一使用 <code>networkManage(target:type:completion:)</code>。</li>
+<li>请求前校验必要参数；成功后先保存模型，再刷新 UI；失败后统一 HUD 提示。</li>
+<li>调试时以真实返回 JSON 修正 Model 和 CodingKeys，不在页面临时解析字典。</li>
+</ul>
+
+<h2>13. 项目目录和文件命名</h2>
+<pre><code>ProjectName/
+├── AppDelegate.swift                 # 应用生命周期
+├── SceneDelegate.swift               # Scene 生命周期
+├── ViewController.swift              # 工程模板遗留入口（如不使用，不再新增业务）
+├── Bridging-Header.h                 # Swift 与 Objective-C 桥接声明
+├── Info.plist                        # 应用配置
+├── BusMate.entitlements              # 权限与能力配置
+├── Assets.xcassets/                  # 图片、颜色、图标等资源
+├── Base/                             # 全局基础能力与通用 UI
+│   ├── Control/                      # 可复用控件、视图、控制器
+│   ├── Extension/                    # Foundation/UIKit 等扩展
+│   └── ThirdPod/                     # 对第三方库的二次封装
+├── Company/                          # 公司/业务平台级复用组件
+│   ├── Modal（模态窗）/              # 业务通用弹窗
+│   ├── Services(服务)/               # 跨模块业务服务
+│   └── Template(模版)/               # 业务通用 UI 模板
+├── Module/                           # 按业务功能拆分的模块
+├── Network/                          # 网络请求、接口定义和网络模型
+│   ├── Assist/                       # 请求辅助模型与配置
+│   ├── Core/                         # 网络核心封装
+│   └── Model/                        # 接口响应/请求模型
+├── Base.lproj/                       # Storyboard 等本地化界面资源
+└── 代码规范/                          # 开发规范与示例文档</code></pre>
+<ul>
+<li>控制器放在模块的 <code>VC</code>，页面视图和 Cell 放在 <code>View</code>，ViewModel 放在 <code>ViewModel</code>。</li>
+<li>目录和文件使用稳定的英文业务名，历史中文目录不强制重命名。</li>
+<li>控制器使用 <code>VC</code> 后缀，Cell 使用 <code>Cell</code>，视图使用 <code>View</code>，模型使用 <code>Model</code>。</li>
+<li>文件名与主要类型保持一致。</li>
+<li>公共代码放 <code>Base</code>，跨模块业务能力放 <code>Company</code>，单模块代码不要放入全局目录。</li>
+</ul>
+<hr>
+<p><strong>维护原则：</strong>新代码优先遵守本文；历史代码按原有结构维护，修改时逐步统一。</p>
+</article>
+</div>
+<footer>BusMate · iOS 共同开发代码规范 · 本页面为单文件 HTML，可离线打开和打印</footer>
+<script>
+const headings=[...document.querySelectorAll('#content h2, #content h3')];
+const links=document.getElementById('tocLinks');
+headings.forEach((h,i)=>{const id='section-'+i;h.id=id;if(h.tagName==='H2'){const a=document.createElement('a');a.href='#'+id;a.textContent=h.textContent;links.appendChild(a)}else{const a=document.createElement('a');a.href='#'+id;a.textContent='　'+h.textContent;links.appendChild(a)}});
+</script>
+</body>
+</html>
